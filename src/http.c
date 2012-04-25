@@ -58,7 +58,6 @@ struct spew_eng_t {
 	struct addrinfo *result;
 } spew_eng;
 
-
 /*
  * Estimate how slow the operation s is and print it if it exceeds
  * P_timer_threshold().
@@ -104,19 +103,24 @@ static void build_data_set(char *url, char *host)
 	char tmp[1024];
 	char *batch;
 	int i;
-	assert (buf);
-	assert (url);
-	assert (host);
-	assert (strlen(url) < 256);
-	assert (strlen(host) < 256);
-	snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
-	snprintf(tmp, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", url, host);
+	assert(buf);
+	assert(url);
+	assert(host);
+	assert(strlen(url) < 256);
+	assert(strlen(host) < 256);
+	snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url,
+		 host);
+	snprintf(tmp, 1024,
+		 "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+		 url, host);
 	data_set.data = buf;
 	data_set.dsize = strlen(buf);
-	batch = malloc(((P_reqs()-1) * data_set.dsize) + P_reqs() + strlen(tmp));
+	batch =
+	    malloc(((P_reqs() - 1) * data_set.dsize) + P_reqs() +
+		   strlen(tmp));
 	assert(batch);
 	data_set.batch = batch;
-	for (i=0; i < (P_reqs()-1); i ++) {
+	for (i = 0; i < (P_reqs() - 1); i++) {
 		memcpy(batch, data_set.data, data_set.dsize);
 		batch = batch + data_set.dsize;
 	}
@@ -144,8 +148,8 @@ static void get_addr(char *host, char *port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = 0;
 	hints.ai_protocol = 0;
-	s = getaddrinfo(host,port,&hints, &spew_eng.result);
-	assert (s == 0);
+	s = getaddrinfo(host, port, &hints, &spew_eng.result);
+	assert(s == 0);
 
 }
 
@@ -157,28 +161,34 @@ static void get_addr(char *host, char *port)
  */
 static int open_conn(int *sd)
 {
-	int sfd=-1,optval,ret;
+	int sfd = -1, optval, ret;
 	struct addrinfo *rp;
 	for (rp = spew_eng.result; rp != NULL; rp = rp->ai_next) {
-		TIME(sfd = socket(rp->ai_family, rp->ai_socktype , rp->ai_protocol));
+		TIME(sfd =
+		     socket(rp->ai_family, rp->ai_socktype,
+			    rp->ai_protocol));
 		if (sfd == -1)
 			continue;
-		assert(fcntl (sfd, F_SETFL, O_NONBLOCK) == 0);
-		optval=1;
-		assert(setsockopt (sfd, SOL_TCP, TCP_NODELAY, &optval, sizeof (optval)) == 0);
+		assert(fcntl(sfd, F_SETFL, O_NONBLOCK) == 0);
+		optval = 1;
+		assert(setsockopt
+		       (sfd, SOL_TCP, TCP_NODELAY, &optval,
+			sizeof(optval)) == 0);
 		TIME(ret = connect(sfd, rp->ai_addr, rp->ai_addrlen));
 		if (ret != -1 || errno == EINPROGRESS)
 			break;
 		TIME(close(sfd));
 	}
 	if (rp == NULL || sfd == -1) {
-		inform(V(HTTP_CRIT),"Failed to open a connection? Errno: %d:%s", errno, strerror(errno));
+		inform(V(HTTP_CRIT),
+		       "Failed to open a connection? Errno: %d:%s", errno,
+		       strerror(errno));
 		return 2;
 	}
-	optval=P_snd_buff();
-	setsockopt (sfd, SOL_SOCKET, SO_SNDBUF, &optval, sizeof (optval));
-	optval=P_rcv_buff();
-	setsockopt (sfd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof (optval));
+	optval = P_snd_buff();
+	setsockopt(sfd, SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval));
+	optval = P_rcv_buff();
+	setsockopt(sfd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
 	*sd = sfd;
 	return 0;
 }
@@ -193,9 +203,10 @@ static int open_conn(int *sd)
 static int write_data(int fd)
 {
 	int ret;
-	ret = write (fd, data_set.batch, data_set.bsize);
+	ret = write(fd, data_set.batch, data_set.bsize);
 	if (ret <= 0 && errno != EAGAIN) {
-		inform(V(HTTP_CRIT),"Write failed. Errno: %d:%s", errno, strerror(errno));
+		inform(V(HTTP_CRIT), "Write failed. Errno: %d:%s", errno,
+		       strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -207,16 +218,16 @@ static int write_data(int fd)
  *
  * FIXME: I'm sure there are better ways....
  */
-static void read_up (int fd)
+static void read_up(int fd)
 {
 	int ret;
 	char buf[16384];
-	for (ret=1; ret > 0;)
-		ret = read (fd, buf, 16383);
+	for (ret = 1; ret > 0;)
+		ret = read(fd, buf, 16383);
 
 	if (ret < 0 && errno != EAGAIN)
-		inform(V(HTTP_INFO),"Read error. Ret: %d.  Errno: %d:%s",
-			ret, errno, strerror(errno));
+		inform(V(HTTP_INFO), "Read error. Ret: %d.  Errno: %d:%s",
+		       ret, errno, strerror(errno));
 }
 
 /*
@@ -238,21 +249,25 @@ static void del_one(int fd)
  */
 static int add_one(void)
 {
-	int ret, sfd=0;
+	int ret, sfd = 0;
 	struct epoll_event ev;
 	while (1) {
 		TIME(ret = open_conn(&sfd));
 		if (ret == 0)
 			break;
-		inform(V(HTTP_CRIT),"BORK BORK on connect. Delaying 1s.\n");
+		inform(V(HTTP_CRIT),
+		       "BORK BORK on connect. Delaying 1s.\n");
 		sleep(1);
 	}
-	
-	ev.events = EPOLLIN | EPOLLPRI | EPOLLET | EPOLLOUT | EPOLLHUP | EPOLLERR | EPOLLRDHUP;
+
+	ev.events =
+	    EPOLLIN | EPOLLPRI | EPOLLET | EPOLLOUT | EPOLLHUP | EPOLLERR |
+	    EPOLLRDHUP;
 	ev.data.fd = sfd;
 	TIME(ret = epoll_ctl(spew_eng.epollfd, EPOLL_CTL_ADD, sfd, &ev));
-	if (ret  == -1) {
-		inform(V(HTTP_CRIT),"epoll_ctl failed. Errno: %d:%s", errno, strerror(errno));
+	if (ret == -1) {
+		inform(V(HTTP_CRIT), "epoll_ctl failed. Errno: %d:%s",
+		       errno, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	spew_eng.fds[sfd] = 0;
@@ -268,23 +283,27 @@ static void epoll_loop(void)
 {
 	int n, sfd;
 	int del_array[10000];
-	int ndel=0;
+	int ndel = 0;
 	int nfds;
 	struct epoll_event events[MAX_EVENTS];
-	
+
 	for (;;) {
-		nfds = epoll_wait(spew_eng.epollfd, events, MAX_EVENTS, -1);
+		nfds =
+		    epoll_wait(spew_eng.epollfd, events, MAX_EVENTS, -1);
 		if (nfds == -1) {
-			inform(V(HTTP_CRIT),"epoll_wait error. Errno: %d:%s", errno, strerror(errno));
+			inform(V(HTTP_CRIT),
+			       "epoll_wait error. Errno: %d:%s", errno,
+			       strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		ndel=0;
+		ndel = 0;
 		for (n = 0; n < nfds; ++n) {
 			sfd = events[n].data.fd;
 			if (events[n].events & (EPOLLPRI | EPOLLIN)) {
 				TIME(read_up(sfd));
 			}
-			if (events[n].events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
+			if (events[n].
+			    events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
 				del_array[ndel++] = sfd;
 			} else if (events[n].events & EPOLLOUT) {
 				if (spew_eng.fds[sfd] == 0) {
@@ -310,14 +329,15 @@ static void epoll_loop(void)
  */
 static void init_epoll(void)
 {
-	int i=0;
+	int i = 0;
 	spew_eng.epollfd = epoll_create(MAX_EVENTS);
 	if (spew_eng.epollfd == -1) {
-		inform(V(HTTP_CRIT),"epoll_create failed. Errno: %d:%s", errno, strerror(errno));
+		inform(V(HTTP_CRIT), "epoll_create failed. Errno: %d:%s",
+		       errno, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	for (i=0; i<P_conns(); i++)
+	for (i = 0; i < P_conns(); i++)
 		add_one();
 }
 
@@ -327,7 +347,7 @@ static void init_epoll(void)
 int http_main(void)
 {
 	build_data_set(P_url(), P_host_header());
-	get_addr(P_server(),P_port());
+	get_addr(P_server(), P_port());
 	init_epoll();
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGINT, my_sighandler);
