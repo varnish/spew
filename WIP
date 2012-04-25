@@ -1,0 +1,17 @@
+Work-in-progress 
+(Almost the same as "TODO" except it's actually being done).
+
+- Figure out configure-bug with EOM ?
+- Short-opts
+- Generating unique-ish URLs within a single batch of requests
+
+Usage and rationale:
+	Lines starting with - are parsed int WIP.h and printed when spew is
+	run, so keep them C-safe (no " in other words). The idea is to
+	remind devs what they(we) planned and what's actually happening
+	without opening a file. If the list gets too long, it gets annoying
+	and you are motivated to finish some items, remove some items that
+	can wait or otherwise condense the list.
+
+	It's an experiment. Let's see how it turns out :)
+
