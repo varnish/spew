@@ -64,7 +64,8 @@ static int argv_param(char *arg)
 static void argv_usage(FILE * fd)
 {
 	fprintf(fd, "Usage: spew [ options ... ]\n");
-	fprintf(fd, " -V, --version\n\t\tprint the version of spew and exit.\n");
+	fprintf(fd,
+		" -V, --version\n\t\tprint the version of spew and exit.\n");
 	fprintf(fd,
 		" -h[subject], --help=subject\n\t\t"
 		"prints generic help, or on the subject specified and exits\n"

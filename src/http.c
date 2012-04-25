@@ -108,16 +108,14 @@ static void build_data_set(char *url, char *host)
 	assert(host);
 	assert(strlen(url) < 256);
 	assert(strlen(host) < 256);
-	snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url,
-		 host);
+	snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
 	snprintf(tmp, 1024,
 		 "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
 		 url, host);
 	data_set.data = buf;
 	data_set.dsize = strlen(buf);
 	batch =
-	    malloc(((P_reqs() - 1) * data_set.dsize) + P_reqs() +
-		   strlen(tmp));
+	    malloc(((P_reqs() - 1) * data_set.dsize) + P_reqs() + strlen(tmp));
 	assert(batch);
 	data_set.batch = batch;
 	for (i = 0; i < (P_reqs() - 1); i++) {
@@ -165,8 +163,7 @@ static int open_conn(int *sd)
 	struct addrinfo *rp;
 	for (rp = spew_eng.result; rp != NULL; rp = rp->ai_next) {
 		TIME(sfd =
-		     socket(rp->ai_family, rp->ai_socktype,
-			    rp->ai_protocol));
+		     socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol));
 		if (sfd == -1)
 			continue;
 		assert(fcntl(sfd, F_SETFL, O_NONBLOCK) == 0);
@@ -255,8 +252,7 @@ static int add_one(void)
 		TIME(ret = open_conn(&sfd));
 		if (ret == 0)
 			break;
-		inform(V(HTTP_CRIT),
-		       "BORK BORK on connect. Delaying 1s.\n");
+		inform(V(HTTP_CRIT), "BORK BORK on connect. Delaying 1s.\n");
 		sleep(1);
 	}
 
@@ -288,8 +284,7 @@ static void epoll_loop(void)
 	struct epoll_event events[MAX_EVENTS];
 
 	for (;;) {
-		nfds =
-		    epoll_wait(spew_eng.epollfd, events, MAX_EVENTS, -1);
+		nfds = epoll_wait(spew_eng.epollfd, events, MAX_EVENTS, -1);
 		if (nfds == -1) {
 			inform(V(HTTP_CRIT),
 			       "epoll_wait error. Errno: %d:%s", errno,
@@ -302,8 +297,8 @@ static void epoll_loop(void)
 			if (events[n].events & (EPOLLPRI | EPOLLIN)) {
 				TIME(read_up(sfd));
 			}
-			if (events[n].
-			    events & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
+			if (events[n].events &
+			    (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
 				del_array[ndel++] = sfd;
 			} else if (events[n].events & EPOLLOUT) {
 				if (spew_eng.fds[sfd] == 0) {

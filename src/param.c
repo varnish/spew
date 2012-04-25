@@ -57,7 +57,6 @@
  */
 #include "param-list.c"
 
-
 /***************************************************************
  * Common sanity-check and utility-functions.                  *
  ***************************************************************/
@@ -90,7 +89,7 @@ static int param_verify_data(enum param_id p, const union param_data d)
 	} else {
 		inform(V(CONFIG),
 		       "Parameter-verification failed for %s of type %s",
-		        param[p].name, ptype[t].name);
+		       param[p].name, ptype[t].name);
 		return 0;
 	}
 }
@@ -595,7 +594,7 @@ void param_show(FILE * fd, enum param_id p, unsigned int what)
 		for (p = 0; p < PARAM_NUM; p++) {
 			param_show(fd, p, what);
 			if (what != (P_WHAT_BIT(KEYVALUE) |
-				P_WHAT_BIT(STATE_DEFAULTS)))
+				     P_WHAT_BIT(STATE_DEFAULTS)))
 				fprintf(fd, "\n");
 		}
 		return;

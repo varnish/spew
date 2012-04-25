@@ -289,10 +289,10 @@ static int config_read(void)
 			if (longline)
 				config_add_buf(&buf, c);
 			break;
-		/*
-		 * XXX: Comments are stripped for longlines too... Is this
-		 *      wise?
-		 */
+			/*
+			 * XXX: Comments are stripped for longlines too... Is this
+			 *      wise?
+			 */
 		case '#':
 			if (!longline && !config_purge_buf(&buf)) {
 				ret = 0;
