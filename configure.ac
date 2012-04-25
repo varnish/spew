@@ -4,11 +4,11 @@
 AC_PREREQ(2.61)
 AC_COPYRIGHT([Copyright (c) 2012 Varnish Software AS
 Copyright (c) 2009-2012 Kristian Lyngstøl <kly@kly.no>])
-AC_INIT([spew], [0.1-devel],[kristian@bohemians.org])
+AC_INIT([spew], [0.1],[kristian@bohemians.org])
 AC_CONFIG_SRCDIR([config.h.in])
 AM_CONFIG_HEADER(config.h)
 
-AM_INIT_AUTOMAKE(spew, 0.1-devel, [-Wall -Werror foreign])
+AM_INIT_AUTOMAKE(spew, 0.1, [-Wall -Werror foreign])
 AM_CFLAGS="-Wall -Werror"
 
 # Checks for programs.
