@@ -16,23 +16,34 @@ It has the following features:
 - Ignores replies.
 - It's fast. Or more accurately: It does nothing.
 - It's single-threaded.
+- Native IPv6 support (it was easier than not to have it!)
+
+As an example of speed, I was able to do 260-290 thousand requests per
+second against Varnish with spew using less than 10% cpu on my workstation
+at home (granted, that's a fast computer). On my laptop (i5 M520, 2.4GHz),
+spew easily does 30k-50k req/s with 3k-5k conn/s against a Varnish-server
+on localhost.
 
 Tips
 ====
 
-If you want to test more than 1000-ish connections, you need to
-increase the ulimit for number of file descriptors.
+- If you want to test more than 1000-ish connections, you need to
+  increase the ulimit for number of file descriptors.
 
-Spew is relatively slow at opening multiple connections.
+- Spew is relatively slow at opening connections. Or rather, opening
+  connections is a slow task in general.
 
-If you open connections too fast, you make want to set::
+- If you open connections too fast, you may want to set::
 
         sysctl net.ipv4.tcp_tw_recycle=1
 
-Otherwise you'll quickly run out of local ports.
+  Otherwise you'll quickly run out of local ports.
 
-Use ``spew -p url=/ -p otherparam=whatever -h param > ~/.config/spew`` to store your
-default options.
+- Use ``spew -p url=/ -p otherparam=whatever -h param > ~/.config/spew`` to
+  store your default options.
+
+- Run multiple spew-processes if you starve a single CPU thread. Let me
+  know if this ever speeds things up for you!
 
 Installation and usage
 ======================
