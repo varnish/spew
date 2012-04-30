@@ -56,7 +56,7 @@ Dependencies:
 - basic build stuff
 - Linux (because of epoll)
 
-From a repo: ./autogensh && ./configure && make && make install
+From a repo: ./autogen.sh && ./configure && make && make install
 From a tar-ball: ./configure && make && make install
 
 Running: spew --help
