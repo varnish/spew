@@ -49,6 +49,23 @@ set params {
 	{server		string	"localhost" 	{ "Target server to connect to." }}
 	{port		string	"80"	 	{ "Port number to connect to." }}
 	{host_header	string	"localhost" 	{ "Host header to use." }}
+	{rand			INT	0	0	100000000 {
+		"If set, adds ?int to the URLs where int is a number"
+		"between 0 and the number specified. E.g: randomize=5 will"
+		"create the following requests:"
+		""
+		"GET /?0"
+		"GET /?1"
+		"GET /?2"
+		"GET /?3"
+		"GET /?4"
+		""
+		"Used to create distinct URLs."
+		"If left at 0, no ? is added."
+		"Note that spew currently just has one set of URLs. If you"
+		"set rand to a value higher than reqs, it will effectively"
+		"be truncated."
+	}}
 	{timer_threshold	INT	10000	1	100000000 {
 		"Threshold (in microseconds) for when to report slow"
 		"operations (HTTP_DEBUG verbosity)."

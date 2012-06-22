@@ -4,7 +4,6 @@ Work-in-progress
 - Figure out configure-bug with EOM ?
 - Short-opts
 - Time-limited execution
-- Generating unique-ish URLs within a single batch of requests
 
 Usage and rationale:
 	Lines starting with - are parsed int WIP.h and printed when spew is

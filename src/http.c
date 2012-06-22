@@ -103,24 +103,43 @@ static void build_data_set(char *url, char *host)
 	char tmp[1024];
 	char *batch;
 	int i;
+	int dec;
 	assert(buf);
 	assert(url);
 	assert(host);
 	assert(strlen(url) < 256);
 	assert(strlen(host) < 256);
-	snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
-	snprintf(tmp, 1024,
-		 "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-		 url, host);
+	if (P_rand() < P_reqs()) {
+		inform(V(HTTP_CRIT),"You're generating fewer requests"
+				    "(reqs=) than your randomness setting"
+				    "(rand=).");
+		inform(V(HTTP_CRIT),"rand= is effectively capped by reqs=");
+	}
+	if (P_rand() > 0) {
+		snprintf(buf, 1024, "GET %s?%d HTTP/1.1\r\nHost: %s\r\n\r\n", url, P_rand()-1, host);
+		snprintf(tmp, 1024,
+			 "GET %s?%d HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+			 url, P_rand()-1, host);
+	} else {
+		snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
+		snprintf(tmp, 1024,
+			 "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+			 url, host);
+	}
 	data_set.data = buf;
 	data_set.dsize = strlen(buf);
 	batch =
 	    malloc(((P_reqs() - 1) * data_set.dsize) + P_reqs() + strlen(tmp));
 	assert(batch);
 	data_set.batch = batch;
+	inform(V(HTTP_DEBUG), "Randomness: %d", P_rand());
 	for (i = 0; i < (P_reqs() - 1); i++) {
-		memcpy(batch, data_set.data, data_set.dsize);
-		batch = batch + data_set.dsize;
+		if (P_rand() > 0) {
+			dec = snprintf(batch, 1024, "GET %s?%d HTTP/1.1\r\nHost: %s\r\n\r\n", url, i % P_rand(), host);
+		} else {
+			dec = snprintf(batch, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
+		}
+		batch = batch + dec;
 	}
 	memcpy(batch, tmp, strlen(tmp));
 	batch = batch + strlen(tmp);
