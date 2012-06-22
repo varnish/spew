@@ -24,6 +24,14 @@ at home (granted, that's a fast computer). On my laptop (i5 M520, 2.4GHz),
 spew easily does 30k-50k req/s with 3k-5k conn/s against a Varnish-server
 on localhost.
 
+Version history
+===============
+
+* 0.4 - Adds ``-p rand=<int>`` option to provide a random factor to urls.
+  Minor build tweaks.
+* 0.3 - Initial released version, sort of. 0.1, 0.2 and 0.3 were released
+  on the same day.
+
 Tips
 ====
 
@@ -66,6 +74,12 @@ wohoo!
 
 See WIP (Work In Progress) for day-to-day changes. The content of WIP as it
 was upon compile-time is usually printed upon startup.
+
+Thanks
+======
+
+* Bearnard Hibbins <bearnard@gmail.com> -  Build instruction fixes
+* Per Buer <perbu@varnish-software.com> - Feature requests and feedback
 
 History
 =======
