@@ -1,10 +1,7 @@
 Work-in-progress 
 (Almost the same as "TODO" except it's actually being done).
 
-- Figure out configure-bug with EOM ?
-- Support for some true(er) degree of randomness in the URLs
-- Short-opts
-- Time-limited execution
+- Support for an upper limit of connections
 
 Usage and rationale:
 	Lines starting with - are parsed int WIP.h and printed when spew is

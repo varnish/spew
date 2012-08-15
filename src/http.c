@@ -233,10 +233,13 @@ int http_main(void)
 {
 	if (!strcmp(P_data_writer(),"batch"))
 		spew_eng.data_engine = &batch_data_engine;
+	else if (!strcmp(P_data_writer(),"rand"))
+		spew_eng.data_engine = &rand_data_engine;
 	else
 		assert("Bah");
 
-	(*spew_eng.data_engine->init)(&batch_data_engine, P_url(), P_host_header());
+	(*spew_eng.data_engine->init)(spew_eng.data_engine, P_url(), P_host_header());
+	assert(spew_eng.data_engine->priv);
 	get_addr(P_server(), P_port());
 	init_epoll();
 	signal(SIGPIPE, SIG_IGN);

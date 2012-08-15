@@ -51,13 +51,16 @@ struct batch_data_set_t {
  */
 static void batch_init(struct data_engine_t *de, char *url, char *host)
 {
-	struct batch_data_set_t *b_data = (struct batch_data_set_t *)(de->priv);
+	struct batch_data_set_t *b_data; 
 	char *buf = malloc(1024);
 	char tmp[1024];
 	char *batch;
 	int i;
 	int dec;
-	de->priv = malloc(sizeof (struct batch_data_set_t));
+	b_data = malloc(sizeof (struct batch_data_set_t));
+	de->priv = b_data;
+	assert(b_data);
+	assert(de->priv);
 	assert(buf);
 	assert(url);
 	assert(host);
@@ -138,5 +141,101 @@ static void batch_read(struct data_engine_t *de, int fd)
 		       ret, errno, strerror(errno));
 }
 
-struct data_engine_t batch_data_engine = { &batch_init, &batch_write, &batch_read, NULL};
+/*
+ * Random
+ *
+ * Deceptively similar to batch.
+ */
 
+struct rand_data_set_t {
+	char *data;
+	char *batch;
+	char last_req[1024];
+	char *url;
+	char *host;
+	size_t dsize;
+	size_t bsize;
+};
+
+
+/*
+ * Pre-creates the entire HTTP request. Petty dirty.
+ *
+ * It sticks Connection: close on the last request to trick the server into
+ * doing out job for us. It's simpler.
+ *
+ * FIXME: UUUGH.
+ */
+static void rand_init(struct data_engine_t *de, char *url, char *host)
+{
+	struct rand_data_set_t *b_data;
+	char *buf = malloc(1024);
+	char *batch;
+	b_data =  malloc(sizeof (struct rand_data_set_t));
+	de->priv = (void *)b_data;
+	assert(de->priv);
+	assert(b_data);
+	assert(buf);
+	assert(url);
+	assert(host);
+	assert(strlen(url) < 256);
+	assert(strlen(host) < 256);
+	b_data->url = url;
+	b_data->host = host;
+	if (P_rand() < P_reqs()) {
+		inform(V(HTTP_INFO),"You're generating fewer requests"
+				    "(reqs=) than your randomness setting"
+				    "(rand=).");
+		inform(V(HTTP_INFO),"rand= is effectively capped by reqs=");
+	}
+	snprintf(buf, 1024, "GET %s%d HTTP/1.1\r\nHost: %s\r\n\r\n", url, P_rand()-1, host);
+	snprintf(b_data->last_req, 1024,
+		 "GET %s%d HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+		 url, P_rand()-1, host);
+	b_data->data = buf;
+	b_data->dsize = strlen(buf);
+	batch =
+	    malloc(((P_reqs() - 1) * b_data->dsize) + P_reqs() + strlen(b_data->last_req));
+	assert(batch);
+	b_data->batch = batch;
+	inform(V(HTTP_DEBUG), "Randomness: %d", P_rand());
+}
+
+/*
+ * Generate individual requests.
+ */
+static void rand_make_req(struct rand_data_set_t *b_data) {
+	char *batch = b_data->batch;
+	int i,dec;
+	for (i = 0; i < (P_reqs() - 1); i++) {
+		dec = snprintf(batch, 1024, "GET %s%d HTTP/1.1\r\nHost: %s\r\n\r\n", b_data->url, (int)random() % P_rand(), b_data->host);
+		batch = batch + dec;
+	}
+	memcpy(batch, b_data->last_req, strlen(b_data->last_req));
+	batch = batch + strlen(b_data->last_req);
+	b_data->bsize = batch - b_data->batch;
+}
+
+/*
+ * Writes the data needed. Not all that good...
+ *
+ * FIXME: Even if we do get that write failure, we have no way of
+ *        recovering from it since we don't track the progress.... Hmm.
+ *        Could probably use spew_eng.fds[] for that.
+ */
+static int rand_write(struct data_engine_t *de, int fd)
+{
+	int ret;
+	struct rand_data_set_t *b_data = (struct rand_data_set_t *)(de->priv);
+	TIME(rand_make_req(b_data));
+	ret = write(fd, b_data->batch, b_data->bsize);
+	if (ret <= 0 && errno != EAGAIN) {
+		inform(V(HTTP_CRIT), "Write failed. Errno: %d:%s", errno,
+		       strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+struct data_engine_t batch_data_engine = { &batch_init, &batch_write, &batch_read, NULL};
+struct data_engine_t rand_data_engine = { &rand_init, &rand_write, &batch_read, NULL};

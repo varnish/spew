@@ -26,6 +26,7 @@
 #define MAX_FDS 10000000
 
 extern struct data_engine_t batch_data_engine;
+extern struct data_engine_t rand_data_engine;
 
 struct data_engine_t {
 	void (*init)(struct data_engine_t *de, char *url, char *host);
