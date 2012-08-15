@@ -144,10 +144,10 @@ static int ptype_verify_simple(const enum param_type_id type,
 	assert(PTYPE_IS_INT(type));
 
 	if (type == PTYPE_UINT || type == PTYPE_MASK) {
-		if (data.u < min || data.u > max) {
+		if (data.u <= min || data.u >= max) {
 			inform(V(CONFIG),
 			       "Value of integer outside of range. "
-			       "(%d < %d < %d)", min, data.i, max);
+			       "(%d <= %d <= %d)", min, data.i, max);
 			return 0;
 		}
 	} else {

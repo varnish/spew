@@ -83,6 +83,9 @@ set params {
 	{rcv_buff	INT	1048576000	8192	1048576000 {
 		"Receive buffer"
 	}}
+	{max_conn	INT	0	0	INT_MAX {
+		"Total number of connections to open"
+	}}
 	{data_writer	string	"batch" {
 		"Method used to send the actual requests."
 		""

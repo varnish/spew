@@ -157,6 +157,7 @@ static int add_one(void)
 		exit(EXIT_FAILURE);
 	}
 	spew_eng.fds[sfd] = 0;
+	spew_eng.conn_count++;
 	return sfd;
 }
 
@@ -200,8 +201,23 @@ static void epoll_loop(void)
 		}
 		for (ndel--; ndel >= 0; ndel--) {
 			del_one(del_array[ndel]);
+			if (P_max_conn())
+				if (spew_eng.conn_count >= P_max_conn())
+					break;
 			add_one();
 		}
+		if (P_max_conn())
+			if (spew_eng.conn_count >= P_max_conn()) {
+				/*
+				 * FIXME: This is horrible. We don't wait
+				 *        to soak up old connections at
+				 *        all...
+				 */
+				sleep(5);
+				inform(V(HTTP_CRIT),"Done.");
+
+				exit(1);
+			}
 	}
 }
 
@@ -239,6 +255,7 @@ int http_main(void)
 		assert("Bah");
 
 	(*spew_eng.data_engine->init)(spew_eng.data_engine, P_url(), P_host_header());
+	spew_eng.conn_count = 0;
 	assert(spew_eng.data_engine->priv);
 	get_addr(P_server(), P_port());
 	init_epoll();

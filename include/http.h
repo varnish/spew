@@ -39,6 +39,7 @@ struct data_engine_t {
 struct spew_eng_t {
 	int fds[MAX_FDS];
 	int epollfd;
+	unsigned long int conn_count;
 	struct addrinfo *result;
 	struct data_engine_t *data_engine;
 };
