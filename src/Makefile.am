@@ -7,7 +7,8 @@ spew_SOURCES = 	util/main.c \
 		util/inform.c \
 		util/arg.c \
 		util/config.c \
-		http.c
+		http.c \
+		data_writers.c
 
 spew_LDADD = 
 

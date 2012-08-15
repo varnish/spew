@@ -38,44 +38,10 @@
 #include "param.h"
 #include "inform.h"
 #include "core.h"
+#include "http.h"
 
-/*
- * Fugly
- */
-#define MAX_EVENTS 1000
-#define MAX_FDS 10000000
 
-struct data_set_t {
-	char *data;
-	char *batch;
-	size_t dsize;
-	size_t bsize;
-} data_set;
-
-struct spew_eng_t {
-	int fds[MAX_FDS];
-	int epollfd;
-	struct addrinfo *result;
-} spew_eng;
-
-/*
- * Estimate how slow the operation s is and print it if it exceeds
- * P_timer_threshold().
- *
- * FIXME: Probably doesn't belong here.
- */
-#define TIMEa(s) do { s; } while(0)
-#define TIME(s) do { 								\
-		struct timeval timerstat_1;					\
-		struct timeval timerstat_2; 					\
-		suseconds_t diff; 						\
-		gettimeofday(&timerstat_1, NULL); 				\
-		s; 								\
-		gettimeofday(&timerstat_2, NULL); 				\
-		diff = timerstat_2.tv_usec - timerstat_1.tv_usec; 		\
-		if (diff > P_timer_threshold()) 				\
-			inform(V(HTTP_DEBUG), "%s took %lu µs", #s, diff);	\
-		} while (0)
+static struct spew_eng_t spew_eng;
 
 /*
  * Signal handler, mainly used for SIGINT.
@@ -87,64 +53,6 @@ void my_sighandler(int sig)
 		inform(V(CORE), "Exiting on user request.");
 		exit(0);
 	}
-}
-
-/*
- * Pre-creates the entire HTTP request. Petty dirty.
- *
- * It sticks Connection: close on the last request to trick the server into
- * doing out job for us. It's simpler.
- *
- * FIXME: UUUGH.
- */
-static void build_data_set(char *url, char *host)
-{
-	char *buf = malloc(1024);
-	char tmp[1024];
-	char *batch;
-	int i;
-	int dec;
-	assert(buf);
-	assert(url);
-	assert(host);
-	assert(strlen(url) < 256);
-	assert(strlen(host) < 256);
-	if (P_rand() < P_reqs()) {
-		inform(V(HTTP_CRIT),"You're generating fewer requests"
-				    "(reqs=) than your randomness setting"
-				    "(rand=).");
-		inform(V(HTTP_CRIT),"rand= is effectively capped by reqs=");
-	}
-	if (P_rand() > 0) {
-		snprintf(buf, 1024, "GET %s?%d HTTP/1.1\r\nHost: %s\r\n\r\n", url, P_rand()-1, host);
-		snprintf(tmp, 1024,
-			 "GET %s?%d HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-			 url, P_rand()-1, host);
-	} else {
-		snprintf(buf, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
-		snprintf(tmp, 1024,
-			 "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-			 url, host);
-	}
-	data_set.data = buf;
-	data_set.dsize = strlen(buf);
-	batch =
-	    malloc(((P_reqs() - 1) * data_set.dsize) + P_reqs() + strlen(tmp));
-	assert(batch);
-	data_set.batch = batch;
-	inform(V(HTTP_DEBUG), "Randomness: %d", P_rand());
-	for (i = 0; i < (P_reqs() - 1); i++) {
-		if (P_rand() > 0) {
-			dec = snprintf(batch, 1024, "GET %s?%d HTTP/1.1\r\nHost: %s\r\n\r\n", url, i % P_rand(), host);
-		} else {
-			dec = snprintf(batch, 1024, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", url, host);
-		}
-		batch = batch + dec;
-	}
-	memcpy(batch, tmp, strlen(tmp));
-	batch = batch + strlen(tmp);
-	data_set.bsize = batch - data_set.batch;
-	sleep(1);
 }
 
 /*
@@ -207,43 +115,6 @@ static int open_conn(int *sd)
 	setsockopt(sfd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
 	*sd = sfd;
 	return 0;
-}
-
-/*
- * Writes the data needed. Not all that good...
- *
- * FIXME: Even if we do get that write failure, we have no way of
- *        recovering from it since we don't track the progress.... Hmm.
- *        Could probably use spew_eng.fds[] for that.
- */
-static int write_data(int fd)
-{
-	int ret;
-	ret = write(fd, data_set.batch, data_set.bsize);
-	if (ret <= 0 && errno != EAGAIN) {
-		inform(V(HTTP_CRIT), "Write failed. Errno: %d:%s", errno,
-		       strerror(errno));
-		return -1;
-	}
-	return 0;
-}
-
-/*
- * Soaks up all data on the fd. Mainly intended to empty buffers.
- * Probably want to do a bit of parsing here.
- *
- * FIXME: I'm sure there are better ways....
- */
-static void read_up(int fd)
-{
-	int ret;
-	char buf[16384];
-	for (ret = 1; ret > 0;)
-		ret = read(fd, buf, 16383);
-
-	if (ret < 0 && errno != EAGAIN)
-		inform(V(HTTP_INFO), "Read error. Ret: %d.  Errno: %d:%s",
-		       ret, errno, strerror(errno));
 }
 
 /*
@@ -314,14 +185,14 @@ static void epoll_loop(void)
 		for (n = 0; n < nfds; ++n) {
 			sfd = events[n].data.fd;
 			if (events[n].events & (EPOLLPRI | EPOLLIN)) {
-				TIME(read_up(sfd));
+				TIME((*(spew_eng.data_engine->read))(spew_eng.data_engine, sfd));
 			}
 			if (events[n].events &
 			    (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
 				del_array[ndel++] = sfd;
 			} else if (events[n].events & EPOLLOUT) {
 				if (spew_eng.fds[sfd] == 0) {
-					TIME(write_data(sfd));
+					TIME((*spew_eng.data_engine->write)(spew_eng.data_engine, sfd));
 					spew_eng.fds[sfd] = 1;
 					shutdown(sfd, SHUT_WR);
 				}
@@ -360,7 +231,12 @@ static void init_epoll(void)
  */
 int http_main(void)
 {
-	build_data_set(P_url(), P_host_header());
+	if (!strcmp(P_data_writer(),"batch"))
+		spew_eng.data_engine = &batch_data_engine;
+	else
+		assert("Bah");
+
+	(*spew_eng.data_engine->init)(&batch_data_engine, P_url(), P_host_header());
 	get_addr(P_server(), P_port());
 	init_epoll();
 	signal(SIGPIPE, SIG_IGN);

@@ -21,6 +21,7 @@
 
 #include <limits.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <assert.h>
 #define COPYRIGHT_STRING \
 	"Copyright (c) 2012 Varnish Software AS\n"		\
@@ -90,5 +91,25 @@ struct core {
 int config_init(void);
 int argv_init(int argc, char **argv);
 extern struct core spew;
+
+/*
+ * Estimate how slow the operation s is and print it if it exceeds
+ * P_timer_threshold().
+ *
+ * FIXME: Probably doesn't belong here.
+ */
+#define TIMEa(s) do { s; } while(0)
+#define TIME(s) do { 								\
+		struct timeval timerstat_1;					\
+		struct timeval timerstat_2; 					\
+		suseconds_t diff; 						\
+		gettimeofday(&timerstat_1, NULL); 				\
+		s; 								\
+		gettimeofday(&timerstat_2, NULL); 				\
+		diff = timerstat_2.tv_usec - timerstat_1.tv_usec; 		\
+		if (diff > P_timer_threshold()) 				\
+			inform(V(HTTP_DEBUG), "%s took %lu µs", #s, diff);	\
+		} while (0)
+
 
 #endif				// _CORE_H

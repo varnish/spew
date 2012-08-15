@@ -83,6 +83,20 @@ set params {
 	{rcv_buff	INT	1048576000	8192	1048576000 {
 		"Receive buffer"
 	}}
+	{data_writer	string	"batch" {
+		"Method used to send the actual requests."
+		""
+		"batch - Sends pre-generated requests in one go."
+		"        Affected by the rand parameter, if specified."
+		"        By far the fastest writer, but also the dumbest."
+		""
+		"rand  - Generates requests on the fly. Uses the url as"
+		"        a base and adds a random number between 0 and"
+		"        the value specified by the rand parameter."
+		"        Unlike batch, each request is unique to the"
+		"        degree that the laws of probability allows it to"
+		"        be. Fast, but not as fast as batch."
+	}}
 	{config		string	 "~/.config/spew" {
 		"The location of the configuration file"
 		""
