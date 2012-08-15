@@ -126,6 +126,7 @@ static void del_one(int fd)
 	TIME(ret = epoll_ctl(spew_eng.epollfd, EPOLL_CTL_DEL, fd, NULL));
 	assert(ret == 0);
 	TIME(close(fd));
+	spew_eng.active_count--;
 }
 
 /*
@@ -146,9 +147,7 @@ static int add_one(void)
 		sleep(1);
 	}
 
-	ev.events =
-	    EPOLLIN | EPOLLPRI | EPOLLET | EPOLLOUT | EPOLLHUP | EPOLLERR |
-	    EPOLLRDHUP;
+	ev.events = spew_eng.epoll_events;
 	ev.data.fd = sfd;
 	TIME(ret = epoll_ctl(spew_eng.epollfd, EPOLL_CTL_ADD, sfd, &ev));
 	if (ret == -1) {
@@ -158,6 +157,7 @@ static int add_one(void)
 	}
 	spew_eng.fds[sfd] = 0;
 	spew_eng.conn_count++;
+	spew_eng.active_count++;
 	return sfd;
 }
 
@@ -202,22 +202,16 @@ static void epoll_loop(void)
 		for (ndel--; ndel >= 0; ndel--) {
 			del_one(del_array[ndel]);
 			if (P_max_conn())
-				if (spew_eng.conn_count >= P_max_conn())
+				if (spew_eng.conn_count >= P_max_conn()) {
+					int c = spew_eng.active_count;
+					if (c<5 || (c<1000 && c%200 == 0))
+						inform(V(HTTP_CRIT),"Done. Waiting for %d connections.",spew_eng.active_count);
+					if (spew_eng.active_count == 0)
+						return ;
 					break;
+				}
 			add_one();
 		}
-		if (P_max_conn())
-			if (spew_eng.conn_count >= P_max_conn()) {
-				/*
-				 * FIXME: This is horrible. We don't wait
-				 *        to soak up old connections at
-				 *        all...
-				 */
-				sleep(5);
-				inform(V(HTTP_CRIT),"Done.");
-
-				exit(1);
-			}
 	}
 }
 
@@ -232,6 +226,12 @@ static void init_epoll(void)
 {
 	int i = 0;
 	spew_eng.epollfd = epoll_create(MAX_EVENTS);
+	/*
+	 * XXX: Ideally we'd use EPOLLET, but this can botch things up
+	 *      when closing shop.
+	 */
+	spew_eng.epoll_events = EPOLLIN | EPOLLPRI | EPOLLOUT | EPOLLHUP | EPOLLERR |
+	    EPOLLRDHUP; 
 	if (spew_eng.epollfd == -1) {
 		inform(V(HTTP_CRIT), "epoll_create failed. Errno: %d:%s",
 		       errno, strerror(errno));
@@ -261,6 +261,6 @@ int http_main(void)
 	init_epoll();
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGINT, my_sighandler);
-	epoll_loop();
+	TIME(epoll_loop());
 	return 0;
 }

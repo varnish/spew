@@ -40,8 +40,10 @@ struct spew_eng_t {
 	int fds[MAX_FDS];
 	int epollfd;
 	unsigned long int conn_count;
+	unsigned int active_count;
 	struct addrinfo *result;
 	struct data_engine_t *data_engine;
+	unsigned int epoll_events;
 };
 
 int http_main(void);
