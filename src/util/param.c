@@ -1,16 +1,16 @@
 /* spew - parameter handling
  * Copyright (C) 2009 Kristian Lyngstøl <kristian@bohemians.org>
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -323,7 +323,7 @@ static int ptype_parse_simple(enum param_id p, char *orig,
 			goto out;
 		}
 		/*
-		 * FIXME: What if it fails? 
+		 * FIXME: What if it fails?
 		 */
 		ret = param_set(p, d, origin);
 		goto out;
@@ -361,7 +361,7 @@ static int ptype_parse_simple(enum param_id p, char *orig,
 	return ret;
 }
 
-/* Not much to parse, really. 
+/* Not much to parse, really.
  *
  *
  * XXX: Probably want to make strings bound by "" eventually, to
@@ -513,7 +513,7 @@ int param_parse(char *str, enum param_origin origin)
 	}
 
 	/*
-	 * Skip the = 
+	 * Skip the =
 	 */
 	sep++;
 	tmp = strncpy(key, str, length);
@@ -549,7 +549,7 @@ int param_parse(char *str, enum param_origin origin)
 	return 0;
 }
 
-/* Set the default value for param p, or for all parameters if p is -1. 
+/* Set the default value for param p, or for all parameters if p is -1.
  * Origin is where the request came from. Typically this will be DEFAULT
  * during startup, CONFIG while parsing the config file and USER later on,
  * even if the user issues a reset to the default.
