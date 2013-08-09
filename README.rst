@@ -56,13 +56,17 @@ Tips
 Installation and usage
 ======================
 
-Dependencies: 
-	
+Dependencies:
+
 - C compiler
 - make
 - awk
 - basic build stuff
 - Linux (because of epoll)
+
+On ubuntu 12.04:
+
+    apt-get install build-essential automake tcl
 
 From a repo: ./autogen.sh && ./configure && make && make install
 From a tar-ball: ./configure && make && make install
