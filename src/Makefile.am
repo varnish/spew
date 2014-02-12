@@ -12,6 +12,7 @@ spew_SOURCES = 	util/main.c \
 
 spew_LDADD = 
 
+EXTRA_DIST = util/generate_structs.tcl
 
 ${top_srcdir}/include/param-list.c: util/generate_structs.tcl
 	cd $(top_srcdir)/src/ && @TCLSH@ util/generate_structs.tcl
